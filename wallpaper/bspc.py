@@ -19,9 +19,9 @@ def get_output(*args: List[str]) -> str:
     return stdout.decode('utf-8').strip()
 
 
-def set_wallpaper(focused_id: str):
+def set_wallpaper(focused_id: str, head: int):
     wallpaper_name = f"{TMP_DIR}{focused_id}.jpg"
-    system(f"nitrogen --set-zoom-fill \"{wallpaper_name}\"")
+    system(f"nitrogen --set-zoom-fill --head={head} \"{wallpaper_name}\"")
 
 
 def get_focused() -> str:
@@ -39,7 +39,7 @@ def copy_wallpapers():
             ratio = MAX_WIDTH/w
             new_h = h * ratio
             img = img.resize((MAX_WIDTH, int(new_h)),
-                             Image.Resampling.BILINEAR)
+                             Image.BILINEAR)
 
         print(img.size)
 
@@ -47,17 +47,23 @@ def copy_wallpapers():
 
 
 def main():
-    names_map = []
-
     ids = get_output('bspc', 'query', '-M').splitlines()
-    names = get_output("bspc", "query", "-M", "--names").splitlines()
+    names = get_output('bspc', 'query', '-M', '--names').splitlines()
+    active_displays = get_output('xrandr', '--listactivemonitors').splitlines()
+
+    def get_display_index(display_name):
+        for count, row_name in enumerate(active_displays[1:]):
+            if row_name.endswith(display_name):
+                return count
 
     id_map = {
-        _id: name for _id, name in zip(ids, names)
+        _id: get_display_index(name) for _id, name in zip(ids, names)
     }
 
     copy_wallpapers()
-    set_wallpaper(get_focused())
+
+    for count, _ in enumerate(ids):
+        set_wallpaper(get_focused(), count)
 
     bspc = Popen(('bspc', 'subscribe', 'desktop_focus'),
                  stdout=PIPE, stderr=PIPE)
@@ -66,5 +72,4 @@ def main():
         next_line = bspc.stdout.readline().strip()
         _, monitor_id, desktop_id = next_line.decode('utf-8').split(' ')
 
-        focused_id = get_focused()
-        set_wallpaper(focused_id)
+        set_wallpaper(get_focused(), id_map[monitor_id])

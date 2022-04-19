@@ -6,4 +6,4 @@ with open(os.path.expanduser("~/.config/bspwm_wallpaper.toml")) as f:
 
 BASE_DIR = config_file.get("BASE_DIR")
 MAX_WIDTH = config_file.get("MAX_WIDTH")
-CONFIG = config_file.get("WALLPAPER")
+CONFIG = config_file.get("wallpaper")
