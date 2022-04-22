@@ -1,0 +1,7 @@
+BASE_DIR = "~/wallpaper/"
+
+[wallpaper]
+1 = "wallpaper.jpg"
+2 = "wallpaper2.jpg"
+3 = "wallpaper3.png"
+4 = "wallpaper.jpg"

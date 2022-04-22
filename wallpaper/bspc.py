@@ -41,7 +41,7 @@ def copy_wallpapers():
     for workspace, name in CONFIG.items():
         if not name:
             continue
-        img = Image.open(BASE_DIR + name)
+        img = Image.open(path.expanduser(BASE_DIR + name))
         img = zoom_fill(img)
         img.convert("RGB").save(f"{TMP_DIR}{workspace}.bmp", optimize=True)
 
