@@ -58,14 +58,13 @@ def main():
     active_displays = get_output('xrandr', '--listactivemonitors').splitlines()
 
     def get_offset(display_name):
-        for count, row_name in enumerate(active_displays[1:]):
+        for row_name in active_displays[1:]:
             if row_name.endswith(display_name):
                 return row_name.split(" ")[3].split("+")[-2]
 
     offset_map = {
         _id: get_offset(name) for _id, name in zip(ids, names)
     }
-    print(offset_map)
 
     copy_wallpapers()
 
