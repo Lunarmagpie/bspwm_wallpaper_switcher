@@ -1,8 +1,9 @@
 from __future__ import annotations
+from pickletools import optimize
 
 from typing import List
 from subprocess import Popen, PIPE
-from os import system, path, mkdir
+from os import path, mkdir
 
 from config import CONFIG, BASE_DIR, MAX_WIDTH
 from PIL import Image
@@ -19,9 +20,16 @@ def get_output(*args: List[str]) -> str:
     return stdout.decode('utf-8').strip()
 
 
-def set_wallpaper(focused_id: str, head: int):
-    wallpaper_name = f"{TMP_DIR}{focused_id}.jpg"
-    system(f"nitrogen --set-zoom-fill --head={head} \"{wallpaper_name}\"")
+def set_wallpaper(img_setter: Popen, focused_id: str, offset: int):
+    # Workspace
+    img_setter.stdin.write(f"{int(focused_id)-1}\n".encode("ASCII"))
+    # X
+    img_setter.stdin.write(f"{offset}\n".encode("ASCII"))
+    # Y
+    img_setter.stdin.write(f"{0}\n".encode("ASCII"))
+
+    img_setter.stdin.flush()
+
 
 
 def get_focused() -> str:
@@ -41,9 +49,7 @@ def copy_wallpapers():
             img = img.resize((MAX_WIDTH, int(new_h)),
                              Image.BILINEAR)
 
-        print(img.size)
-
-        img.convert("RGB").save(f"{TMP_DIR}{workspace}.jpg")
+        img.convert("RGB").save(f"{TMP_DIR}{workspace}.bmp", optimize=True)
 
 
 def main():
@@ -51,20 +57,19 @@ def main():
     names = get_output('bspc', 'query', '-M', '--names').splitlines()
     active_displays = get_output('xrandr', '--listactivemonitors').splitlines()
 
-    def get_display_index(display_name):
+    def get_offset(display_name):
         for count, row_name in enumerate(active_displays[1:]):
             if row_name.endswith(display_name):
-                return count
+                return row_name.split(" ")[3].split("+")[-2]
 
-    id_map = {
-        _id: get_display_index(name) for _id, name in zip(ids, names)
+    offset_map = {
+        _id: get_offset(name) for _id, name in zip(ids, names)
     }
+    print(offset_map)
 
     copy_wallpapers()
 
-    for count, _ in enumerate(ids):
-        set_wallpaper(get_focused(), count)
-
+    img_setter = Popen(('./window.o', TMP_DIR), stdin=PIPE, stdout=PIPE)
     bspc = Popen(('bspc', 'subscribe', 'desktop_focus'),
                  stdout=PIPE, stderr=PIPE)
 
@@ -72,4 +77,4 @@ def main():
         next_line = bspc.stdout.readline().strip()
         _, monitor_id, desktop_id = next_line.decode('utf-8').split(' ')
 
-        set_wallpaper(get_focused(), id_map[monitor_id])
+        set_wallpaper(img_setter, get_focused(), offset_map[monitor_id])
