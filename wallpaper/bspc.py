@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List
 from subprocess import Popen, PIPE
-from os import path, mkdir
+from os import path, mkdir, getcwd
 
 from PIL import Image
 
@@ -62,7 +62,7 @@ def main():
 
     copy_wallpapers()
 
-    img_setter = Popen(('./window.o', TMP_DIR), stdin=PIPE, stdout=PIPE)
+    img_setter = Popen((f'{path.realpath(__file__).replace("wallpaper/bspc.py", "")}/window.o', TMP_DIR), stdin=PIPE, stdout=PIPE)
     bspc = Popen(('bspc', 'subscribe', 'desktop_focus'),
                  stdout=PIPE, stderr=PIPE)
 
