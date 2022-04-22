@@ -1,12 +1,14 @@
 from __future__ import annotations
-from pickletools import optimize
 
 from typing import List
 from subprocess import Popen, PIPE
 from os import path, mkdir
 
-from config import CONFIG, BASE_DIR, MAX_WIDTH
 from PIL import Image
+
+from config import CONFIG, BASE_DIR
+from resize import zoom_fill
+
 
 TMP_DIR = "/tmp/bspwm_wallpaper/"
 
@@ -31,7 +33,6 @@ def set_wallpaper(img_setter: Popen, focused_id: str, offset: int):
     img_setter.stdin.flush()
 
 
-
 def get_focused() -> str:
     return get_output("bspc", "query", "-D", "-d", "--names")
 
@@ -41,14 +42,7 @@ def copy_wallpapers():
         if not name:
             continue
         img = Image.open(BASE_DIR + name)
-        w, h = img.size
-
-        if w > MAX_WIDTH:
-            ratio = MAX_WIDTH/w
-            new_h = h * ratio
-            img = img.resize((MAX_WIDTH, int(new_h)),
-                             Image.BILINEAR)
-
+        img = zoom_fill(img)
         img.convert("RGB").save(f"{TMP_DIR}{workspace}.bmp", optimize=True)
 
 
