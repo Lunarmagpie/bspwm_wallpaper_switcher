@@ -1,3 +1,3 @@
-from bspc import main
+from wallpaper.bspc import main
 
 main()

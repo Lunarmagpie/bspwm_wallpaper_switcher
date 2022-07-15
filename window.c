@@ -15,7 +15,22 @@ int main(int arc, char *argv[])
 {
     d = XOpenDisplay(NULL);
     root = RootWindow(d, DefaultScreen(d));
-    bitmap = XCreatePixmap(d, root, 5760, 1080, DefaultDepth(d, 0));
+
+    {
+        char *line = NULL;
+        size_t len = 0;
+        ssize_t lineSize = 0;
+
+
+        lineSize = getline(&line, &len, stdin);
+        int pixmapWidth = atoi(line);
+        lineSize = getline(&line, &len, stdin);
+        int pixmapHeight = atoi(line);
+
+        bitmap = XCreatePixmap(d, root, pixmapWidth, pixmapHeight, DefaultDepth(d, 0));
+
+        free(line);
+    }
 
     char *directory = argv[1];
     Imlib_Image images[12];
@@ -55,7 +70,7 @@ void load_images(char dir[], Imlib_Image arr[])
         if (strcmp(end, ".bmp") == 0)
         {
             char *n = strtok(name, ".bmp");
-            int number = atoi(n) - 1;
+            int number = atoi(n);
 
             char fullname[80];
             sprintf(fullname, "%s%s.bmp", dir, name);
