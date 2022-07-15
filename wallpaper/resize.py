@@ -1,42 +1,42 @@
 from PIL import Image
-from wallpaper.config import CONFIG, MAX_WIDTH, MAX_HEIGHT
+from wallpaper.config import CONFIG
 
 
-def strech(img: Image) -> Image:
+def strech(img: Image, width: int, height: int) -> Image:
     w, h = img.size
-    if w != MAX_WIDTH and h != MAX_HEIGHT:
-        img = img.resize((MAX_WIDTH, MAX_HEIGHT), Image.BILINEAR)
+    if w != width and h != height:
+        img = img.resize((width, height), Image.BILINEAR)
     return img
 
 
-def zoom_fill(img: Image):
+def zoom_fill(img: Image, width: int, height: int):
     w, h = img.size
 
-    if w == MAX_WIDTH and h == MAX_HEIGHT:
+    if w == width and h == height:
         return img
 
     # Scale the image to fill horizontally
-    ratio = MAX_WIDTH/w
-    resize_img = img.resize((MAX_WIDTH, int(h*ratio)), Image.BILINEAR)
+    ratio = width/w
+    resize_img = img.resize((width, int(h*ratio)), Image.BILINEAR)
 
     w, h = resize_img.size
 
-    if h == MAX_HEIGHT:
+    if h == height:
         return resize_img
 
     # If height is too big, crop off top and bottom
-    if h > MAX_HEIGHT:
-        offset = (h-MAX_HEIGHT)/2
-        resize_img = resize_img.crop((0, offset, MAX_WIDTH, h-offset))
+    if h > height:
+        offset = (h-height)/2
+        resize_img = resize_img.crop((0, offset, width, h-offset))
         return resize_img
 
     # If height is too small, resize original image and crop off sides
     w, h = img.size
-    ratio = MAX_HEIGHT/h
-    img = img.resize((int(ratio*w), MAX_HEIGHT), Image.BILINEAR)
+    ratio = height/h
+    img = img.resize((int(ratio*w), height), Image.BILINEAR)
 
     w, h = img.size
-    offset = (w-MAX_WIDTH)/2
-    img = img.crop((offset, 0, w-offset, MAX_HEIGHT))
+    offset = (w-width)/2
+    img = img.crop((offset, 0, w-offset, height))
 
     return img
