@@ -46,7 +46,8 @@ def copy_wallpapers(display_map: dict[str, int]):
 
         img = Image.open(path.expanduser(BASE_DIR + name))
         img = zoom_fill(img)
-        img.convert("RGB").save(f"{TMP_DIR}{display_number}.bmp", optimize=True)
+        img.convert("RGB").save(
+            f"{TMP_DIR}{display_number}.bmp", optimize=True)
 
 
 def main():
@@ -78,6 +79,9 @@ def main():
     img_setter.stdin.write(f"{MAX_WIDTH}\n".encode("ASCII"))
     img_setter.stdin.write(f"{MAX_HEIGHT}\n".encode("ASCII"))
     img_setter.stdin.flush()
+
+    set_wallpaper(img_setter, get_focused(
+        display_map), 0)
 
     while True:
         next_line = bspc.stdout.readline().strip()
