@@ -37,6 +37,6 @@ def zoom_fill(img: Image):
 
     w, h = img.size
     offset = (w-MAX_WIDTH)/2
-    img = img.crop((0, 0, w-offset*2, MAX_HEIGHT))
+    img = img.crop((offset, 0, w-offset, MAX_HEIGHT))
 
     return img
