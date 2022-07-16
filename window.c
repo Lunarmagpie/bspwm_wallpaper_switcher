@@ -10,7 +10,6 @@ Display *d;
 Window root;
 Pixmap bitmap;
 
-
 int main(int arc, char *argv[])
 {
     d = XOpenDisplay(NULL);
@@ -100,7 +99,25 @@ void run(Imlib_Image imgs[], int img_n, int x, int y)
     imlib_context_set_drawable(bitmap);
 
     imlib_render_image_on_drawable(x, y);
+
+    // Set the properties
+    // <https://github.com/l3ib/nitrogen/blob/master/src/SetBG.cc>
+
+    Atom prop_root, prop_esetroot, type;
+
+    prop_root = XInternAtom(d, "_XROOTPMAP_ID", False);
+    prop_esetroot = XInternAtom(d, "ESETROOT_PMAP_ID", False);
+
+    if (prop_root == None || prop_esetroot == None) {
+        // printf _("ERROR: BG set could not make atoms.") << "\n";
+        return;
+    }
+
+    Atom XA_PIXMAP = 20;
+    XChangeProperty(d, root, prop_root, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &(bitmap), 1);
+    XChangeProperty(d, root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &(bitmap), 1);
+
     XSetWindowBackgroundPixmap(d, root, bitmap);
-    XClearWindow(d, root);
     XFlush(d);
+    XClearWindow(d, root);
 }
