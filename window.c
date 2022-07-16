@@ -6,6 +6,8 @@
 #include <X11/Xlib.h>
 #include <Imlib2.h>
 
+#define FILETYPE ".bmp" 
+
 Display *d;
 Window root;
 Pixmap bitmap;
@@ -66,15 +68,17 @@ void load_images(char dir[], Imlib_Image arr[])
     {
         char *name = de->d_name;
         char *end = strrchr(name, '.');
-        if (strcmp(end, ".bmp") == 0)
+        if (strcmp(end, FILETYPE) == 0)
         {
-            char *n = strtok(name, ".bmp");
+            char *n = strtok(name, FILETYPE);
             int number = atoi(n);
 
-            char fullname[80];
-            sprintf(fullname, "%s%s.bmp", dir, name);
+            char *fullname = malloc(strlen(dir) * 8 + strlen(name) * 8 + sizeof(FILETYPE));
+            sprintf(fullname, "%s%s%s", dir, name, FILETYPE);
 
             arr[number] = imlib_load_image(fullname);
+
+            free(fullname);
         }
     }
     closedir(dr);
