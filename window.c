@@ -1,3 +1,6 @@
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
 #include <stdio.h>
 #include <dirent.h>
 #include <stdlib.h>
@@ -8,94 +11,35 @@
 
 #define FILETYPE ".bmp" 
 
-Display *d;
-Window root;
-Pixmap bitmap;
+struct X11Info {
+    Display *d;
+    Pixmap bitmap;
+    Window root;
+};
 
-int main(int arc, char *argv[])
+struct X11Info*
+get_info(int pixmapWidth, int pixmapHeight)
 {
-    d = XOpenDisplay(NULL);
-    root = RootWindow(d, DefaultScreen(d));
+    struct X11Info info;
+    info.d = XOpenDisplay(NULL);
+    info.root = RootWindow(info.d, DefaultScreen(info.d));
+    info.bitmap = XCreatePixmap(info.d, info.root, pixmapWidth, pixmapHeight, DefaultDepth(info.d, 0));
 
-    {
-        char *line = NULL;
-        size_t len = 0;
-        ssize_t lineSize = 0;
-
-
-        lineSize = getline(&line, &len, stdin);
-        int pixmapWidth = atoi(line);
-        lineSize = getline(&line, &len, stdin);
-        int pixmapHeight = atoi(line);
-
-        bitmap = XCreatePixmap(d, root, pixmapWidth, pixmapHeight, DefaultDepth(d, 0));
-
-        free(line);
-    }
-
-    char *directory = argv[1];
-    Imlib_Image images[12];
-    load_images(directory, images);
-    while (1)
-    {
-        char *line = NULL;
-        size_t len = 0;
-        ssize_t lineSize = 0;
-
-        lineSize = getline(&line, &len, stdin);
-        int img_n = atoi(line);
-        lineSize = getline(&line, &len, stdin);
-        int x = atoi(line);
-        lineSize = getline(&line, &len, stdin);
-        int y = atoi(line);
-
-        free(line);
-        run(images, img_n, x, y);
-    }
     return 0;
 }
 
-void load_images(char dir[], Imlib_Image arr[])
+void set_window(struct X11Info info, Imlib_Image img, int x, int y)
 {
-    struct dirent *de;
-    DIR *dr = opendir(dir);
-    if (dr == NULL)
-    {
-        printf("Could not open current directory");
-        return;
-    }
-    while ((de = readdir(dr)) != NULL)
-    {
-        char *name = de->d_name;
-        char *end = strrchr(name, '.');
-        if (strcmp(end, FILETYPE) == 0)
-        {
-            char *n = strtok(name, FILETYPE);
-            int number = atoi(n);
+    Display *d = info.d;
+    Pixmap bitmap = info.bitmap;
+    Window root = info.root;
 
-            char *fullname = malloc(strlen(dir) * 8 + strlen(name) * 8 + sizeof(FILETYPE));
-            sprintf(fullname, "%s%s%s", dir, name, FILETYPE);
-
-            arr[number] = imlib_load_image(fullname);
-
-            free(fullname);
-        }
-    }
-    closedir(dr);
-}
-
-void run(Imlib_Image imgs[], int img_n, int x, int y)
-{
     int s = DefaultScreen(d);
-
-    Imlib_Image img;
-    int width, height;
-    img = imgs[img_n];
 
     imlib_context_set_image(img);
 
-    width = imlib_image_get_width();
-    height = imlib_image_get_height();
+    int width = imlib_image_get_width();
+    int height = imlib_image_get_height();
 
     imlib_context_set_display(d);
     imlib_context_set_visual(DefaultVisual(d, 0));
@@ -124,4 +68,31 @@ void run(Imlib_Image imgs[], int img_n, int x, int y)
     XSetWindowBackgroundPixmap(d, root, bitmap);
     XFlush(d);
     XClearWindow(d, root);
+}
+
+static PyMethodDef Methods[] = {
+    {"get_info",  get_info, METH_VARARGS, NULL},
+    {NULL, NULL, 0, NULL}        /* Sentinel */
+};
+
+static struct PyModuleDef module = {
+    PyModuleDef_HEAD_INIT,
+    "backgrounds",   /* name of module */
+    NULL, /* module documentation, may be NULL */
+    -1,       /* size of per-interpreter state of the module,
+                 or -1 if the module keeps state in global variables. */
+    Methods
+};
+
+
+PyMODINIT_FUNC
+PyInit_spam(void)
+{
+    PyObject *m;
+
+    m = PyModule_Create(&module);
+    if (m == NULL)
+        return NULL;
+
+    return m;
 }
