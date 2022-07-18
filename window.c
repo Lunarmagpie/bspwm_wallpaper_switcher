@@ -83,9 +83,7 @@ BackgroundSetter_set_wallpaper(BackgroundSetter *self, PyObject *args, PyObject 
         return NULL;
     }
 
-    // Imlib_Image img = ((ImlibImage*)PY_img)->img;
-
-    Imlib_Image img = imlib_load_image("/tmp/bspwm_wallpaper/1.bmp");
+    Imlib_Image img = ((ImlibImage*)PY_img)->img;
  
     int x = PyLong_AsLong(PY_x);
     int y = PyLong_AsLong(PY_y);

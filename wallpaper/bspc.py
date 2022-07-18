@@ -9,6 +9,7 @@ from PIL import Image
 
 from wallpaper.config import CONFIG, BASE_DIR, MAX_WIDTH, MAX_HEIGHT
 from wallpaper.resize import zoom_fill
+from backgrounds import ImlibImage, BackgroundSetter
 
 
 TMP_DIR = "/tmp/bspwm_wallpaper/"
@@ -31,22 +32,16 @@ def get_output(*args: List[str]) -> str:
     return stdout.decode('utf-8').strip()
 
 
-def set_wallpaper(img_setter: Popen, focused_id: int, monitor: MonitorInfo):
-    # Workspace
-    img_setter.stdin.write(f"{focused_id}\n".encode("ASCII"))
-    # X
-    img_setter.stdin.write(f"{monitor.x_offset}\n".encode("ASCII"))
-    # Y
-    img_setter.stdin.write(f"{monitor.y_offset}\n".encode("ASCII"))
-
-    img_setter.stdin.flush()
+def set_wallpaper(img_setter: BackgroundSetter, wallpaper: ImlibImage, monitor: MonitorInfo):
+    img_setter.set_wallpaper(wallpaper, monitor.x_offset, monitor.y_offset)
 
 
 def get_focused(display_map: dict[str, int]) -> int:
     return display_map[get_output("bspc", "query", "-D", "-d", "--names")]
 
 
-def copy_wallpapers(display_map: dict[str, int], monitor_map: dict[str, MonitorInfo]):
+def open_wallpapers(display_map: dict[str, int], monitor_map: dict[str, MonitorInfo]) -> dict[int, ImlibImage]:
+    out = {}
     for workspace, name in CONFIG.items():
         if not name:
             continue
@@ -54,10 +49,15 @@ def copy_wallpapers(display_map: dict[str, int], monitor_map: dict[str, MonitorI
         display_number = display_map[workspace]
 
         img = Image.open(path.expanduser(BASE_DIR + name))
-        monitor = monitor_map[get_output('bspc', 'query', '-M', '-d', workspace)]
+        monitor = monitor_map[get_output(
+            'bspc', 'query', '-M', '-d', workspace)]
         img = zoom_fill(img, monitor.width, monitor.height)
+
+        imgpath = f"{TMP_DIR}{display_number}.bmp"
         img.convert("RGB").save(
-            f"{TMP_DIR}{display_number}.bmp", optimize=True)
+            imgpath)
+        out[display_number] = ImlibImage(imgpath)
+    return out
 
 
 def main():
@@ -83,23 +83,19 @@ def main():
         _id: get_offset(name) for _id, name in zip(ids, names)
     }
 
-    copy_wallpapers(display_map, offset_map)
+    wallpapers = open_wallpapers(display_map, offset_map)
 
-    img_setter = Popen(
-        (f'{path.realpath(__file__).replace("wallpaper/bspc.py", "")}/window.o', TMP_DIR), stdin=PIPE, stdout=PIPE)
     bspc = Popen(('bspc', 'subscribe', 'desktop_focus'),
                  stdout=PIPE, stderr=PIPE)
 
-    img_setter.stdin.write(f"{MAX_WIDTH}\n".encode("ASCII"))
-    img_setter.stdin.write(f"{MAX_HEIGHT}\n".encode("ASCII"))
-    img_setter.stdin.flush()
+    img_setter = BackgroundSetter(MAX_WIDTH, MAX_HEIGHT)
 
-    set_wallpaper(img_setter, get_focused(
-        display_map), offset_map[get_output("bspc", "query", "-M")])
+    set_wallpaper(img_setter, wallpapers[get_focused(
+        display_map)], offset_map[get_output("bspc", "query", "-M")])
 
     while True:
         next_line = bspc.stdout.readline().strip()
         _, monitor_id, desktop_id = next_line.decode('utf-8').split(' ')
 
-        set_wallpaper(img_setter, get_focused(
-            display_map), offset_map[monitor_id])
+        set_wallpaper(img_setter, wallpapers[get_focused(
+            display_map)], offset_map[monitor_id])
