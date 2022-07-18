@@ -8,3 +8,4 @@ __pycache__/
 *.bmp
 *.o
 test.py
+build/

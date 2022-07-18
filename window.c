@@ -115,8 +115,8 @@ BackgroundSetter_set_wallpaper(BackgroundSetter *self, PyObject *args, PyObject 
     XChangeProperty(self->d, self->root, prop_esetroot, XA_PIXMAP, 32, PropModeReplace, (unsigned char *) &(self->bitmap), 1);
 
     XSetWindowBackgroundPixmap(self->d, self->root, self->bitmap);
-    XFlush(self->d);
     XClearWindow(self->d, self->root);
+    XFlush(self->d);
 
     Py_RETURN_NONE;
 }
