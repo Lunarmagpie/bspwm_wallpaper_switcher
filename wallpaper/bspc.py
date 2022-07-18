@@ -7,12 +7,11 @@ from dataclasses import dataclass
 
 from PIL import Image
 
-from wallpaper.config import CONFIG, BASE_DIR, MAX_WIDTH, MAX_HEIGHT
+from wallpaper.config import CONFIG, BASE_DIR, MAX_WIDTH, MAX_HEIGHT, TMP_DIR
 from wallpaper.resize import zoom_fill
+from wallpaper.errors import send_error
 from backgrounds import ImlibImage, BackgroundSetter
 
-
-TMP_DIR = "/tmp/bspwm_wallpaper/"
 
 if not path.exists(TMP_DIR):
     mkdir(TMP_DIR)
@@ -40,7 +39,7 @@ def get_focused(display_map: dict[str, int]) -> int:
     return display_map[get_output("bspc", "query", "-D", "-d", "--names")]
 
 
-def open_wallpapers(display_map: dict[str, int], monitor_map: dict[str, MonitorInfo]) -> dict[int, ImlibImage]:
+def open_wallpapers(img_setter: BackgroundSetter, display_map: dict[str, int], monitor_map: dict[str, MonitorInfo]) -> dict[int, ImlibImage]:
     out = {}
     for workspace, name in CONFIG.items():
         if not name:
@@ -48,7 +47,13 @@ def open_wallpapers(display_map: dict[str, int], monitor_map: dict[str, MonitorI
 
         display_number = display_map[workspace]
 
-        img = Image.open(path.expanduser(BASE_DIR + name))
+        filepath = path.expanduser(BASE_DIR + name)
+        try:
+            img = Image.open(filepath)
+        except FileNotFoundError:
+            send_error(img_setter, f"Can not open file {filepath}")
+            exit()
+
         monitor = monitor_map[get_output(
             'bspc', 'query', '-M', '-d', workspace)]
         img = zoom_fill(img, monitor.width, monitor.height)
@@ -83,12 +88,11 @@ def main():
         _id: get_offset(name) for _id, name in zip(ids, names)
     }
 
-    wallpapers = open_wallpapers(display_map, offset_map)
-
     bspc = Popen(('bspc', 'subscribe', 'desktop_focus'),
                  stdout=PIPE, stderr=PIPE)
 
     img_setter = BackgroundSetter(MAX_WIDTH, MAX_HEIGHT)
+    wallpapers = open_wallpapers(img_setter, display_map, offset_map)
 
     set_wallpaper(img_setter, wallpapers[get_focused(
         display_map)], offset_map[get_output("bspc", "query", "-M")])

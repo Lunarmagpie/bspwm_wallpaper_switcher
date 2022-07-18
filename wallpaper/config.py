@@ -8,3 +8,5 @@ BASE_DIR = config_file.get("base_dir")
 CONFIG = config_file.get("wallpaper")
 MAX_WIDTH = config_file.get("width", 1920)
 MAX_HEIGHT = config_file.get("height", 1080)
+
+TMP_DIR = "/tmp/bspwm_wallpaper/"

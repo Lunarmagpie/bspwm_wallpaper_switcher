@@ -9,3 +9,5 @@ __pycache__/
 *.o
 test.py
 build/
+
+UbuntuMono-R.ttf
