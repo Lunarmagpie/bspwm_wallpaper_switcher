@@ -1,7 +1,13 @@
 import toml
 import os
+import sys
 
-with open(os.path.expanduser("~/.config/bspwm_wallpaper.toml")) as f:
+if len(sys.argv) >= 2:
+    config_path = sys.argv[1]
+else:
+    config_path = "~/.config/bspwm_wallpaper.toml"
+
+with open(os.path.expanduser(config_path)) as f:
     config_file = toml.loads(f.read())
 
 BASE_DIR = config_file.get("base_dir")
