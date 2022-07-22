@@ -1,9 +1,11 @@
 from __future__ import annotations
+from posixpath import split
 
 from typing import List
 from subprocess import Popen, PIPE
 from os import path, mkdir, getcwd
 from dataclasses import dataclass
+from json import loads
 
 from PIL import Image
 
@@ -25,7 +27,7 @@ class MonitorInfo:
     y_offset: int
 
 
-def get_output(*args: List[str]) -> str:
+def get_output(*args: str) -> str:
     process = Popen(args, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
     return stdout.decode('utf-8').strip()
@@ -38,6 +40,11 @@ def set_wallpaper(img_setter: BackgroundSetter, wallpaper: ImlibImage, monitor: 
 def get_focused(display_map: dict[str, int]) -> int:
     return display_map[get_output("bspc", "query", "-D", "-d", "--names")]
 
+def get_focused_on_monitor(display_map: dict[str, int], monitor: str) -> int:
+    tree = get_output("bspc", "query", "-T", "-m", monitor)
+    focused_desktop = loads(tree)["focusedDesktopId"]
+    name = get_output("bspc", "query", "-D", "-d", str(focused_desktop), "--names")
+    return display_map[name]
 
 def open_wallpapers(img_setter: BackgroundSetter, display_map: dict[str, int], monitor_map: dict[str, MonitorInfo]) -> dict[int, ImlibImage]:
     out = {}
@@ -94,8 +101,10 @@ def main():
     img_setter = BackgroundSetter(MAX_WIDTH, MAX_HEIGHT)
     wallpapers = open_wallpapers(img_setter, display_map, offset_map)
 
-    set_wallpaper(img_setter, wallpapers[get_focused(
-        display_map)], offset_map[get_output("bspc", "query", "-M")])
+    [set_wallpaper(img_setter, wallpapers[get_focused_on_monitor(
+        display_map, monitor)], offset_map[monitor]) for monitor in get_output("bspc", "query", "-M").splitlines()]
+
+
 
     while True:
         next_line = bspc.stdout.readline().strip()
