@@ -45,7 +45,11 @@ def open_wallpapers(img_setter: BackgroundSetter, display_map: dict[str, int], m
         if not name:
             continue
 
-        display_number = display_map[workspace]
+        try:
+            display_number = display_map[workspace]
+        except KeyError:
+            print("No display for wallpaper ", workspace)
+            continue
 
         filepath = path.expanduser(BASE_DIR + name)
         try:
@@ -91,15 +95,21 @@ def main():
     bspc = Popen(('bspc', 'subscribe', 'desktop_focus'),
                  stdout=PIPE, stderr=PIPE)
 
-    img_setter = BackgroundSetter(MAX_WIDTH, MAX_HEIGHT)
+    main_display = next(iter(offset_map.values()))
+
+    img_setter = BackgroundSetter(main_display.width, main_display.height)
     wallpapers = open_wallpapers(img_setter, display_map, offset_map)
 
     set_wallpaper(img_setter, wallpapers[get_focused(
-        display_map)], offset_map[get_output("bspc", "query", "-M")])
+        display_map)], offset_map[get_output("bspc", "query", "-M", "-m")])
 
     while True:
         next_line = bspc.stdout.readline().strip()
         _, monitor_id, desktop_id = next_line.decode('utf-8').split(' ')
 
-        set_wallpaper(img_setter, wallpapers[get_focused(
-            display_map)], offset_map[monitor_id])
+        try:
+            set_wallpaper(img_setter, wallpapers[get_focused(
+                display_map)], offset_map[monitor_id])
+        except KeyError:
+            print("No wallpaper for ", monitor_id, ". Ignoring...", sep="")
+            
